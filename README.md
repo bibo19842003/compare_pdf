@@ -23,3 +23,8 @@ git clone https://github.com/bibo19842003/compare_pdf
 cd compare_pdf
 pip install requirement.txt
 ```
+
+## 代码运行
+```py
+python compare_pdf.py
+```
