@@ -29,3 +29,22 @@ pip install requirement.txt
 ```py
 python compare_pdf.py
 ```
+
+## 打包EXE文件
+**1、运行代码文件**  
+```py
+python compare_pdf.py
+```
+
+**2、执行打包命令**
+```py
+pyinstaller -w --collect-all paddleocr --collect-all pyclipper --collect-all imghdr --collect-all skimage --collect-all imgaug --collect-all scipy.io --collect-all lmdb  --collect-all requests -y compare_pdf.py
+```
+
+**3、添加模型相关文件**  
+将 *ch_ppocr_mobile_v2.0_cls_infer*  *ch_PP-OCRv4_det_infer*  *ch_PP-OCRv4_rec_infer* 三个文件夹复制到 dist/compare_pdf/_internal 目录下，若没有那3个目录，执行第一步运行代码文件会从网络下载并生成。  
+
+**4、添加dll文件**  
+将python安装包目录 Lib/site-packages/paddle/libs 下面的所有文件拷贝到 dist/compare_pdf/_internal/paddle/libs 目录下。  
+
+**此时，dist\compare_pdf 目录下的 compare_pdf.exe 可以正常运行。**
