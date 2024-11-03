@@ -18,11 +18,14 @@
 Python：3.10  
 
 ## 安装说明
+**1、安装依赖**  
 ```py
 git clone https://github.com/bibo19842003/compare_pdf
 cd compare_pdf
 pip install requirement.txt
 ```
+
+**2、修改已安装的 CustomTkinter**  
 参考 https://github.com/TomSchimansky/CustomTkinter/pull/2605/files 修改 CustomTkinter 组件的相应文件。  
 
 ## 代码运行
