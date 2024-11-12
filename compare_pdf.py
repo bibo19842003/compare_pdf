@@ -1,6 +1,7 @@
 import os
 import sys
 import shutil
+import datetime
 import threading
 from itertools import product
 import fitz
@@ -8,7 +9,7 @@ from paddleocr import PaddleOCR
 from difflib import HtmlDiff
 import customtkinter
 from CTkMessagebox import CTkMessagebox
-
+from win32com import client
 
 
 
@@ -47,6 +48,7 @@ class App(customtkinter.CTk):
         self.user_ui()
         
 
+    # 范围：pdf文本比较
     # 选择文件夹
     def select_folder(self, index):
         folder = customtkinter.filedialog.askopenfilename()
@@ -59,6 +61,7 @@ class App(customtkinter.CTk):
                 self.fc_entry_select_file_2.insert(0, folder)
             
 
+    # 范围：pdf文本比较
     # 获取一个文件夹内的所有图片的文本
     def paddleocr_get_mul_pic_text(self, ocr, img_folder, file):
         img_list = []
@@ -84,9 +87,8 @@ class App(customtkinter.CTk):
         with open(os.path.join(img_folder, "text_content.txt"), "w", encoding="utf-8") as f:
             f.write(total_res)
         
-        #return total_res
         
-        
+    # 范围：pdf文本比较
     # 获取单个图片内的文本
     def paddleocr_get_single_pic_text(self, ocr, img_folder, file, index):
         image_file = os.path.join(self.file_directory, img_folder, "pdf_split_" + str(index+1).zfill(3) + ".png")
@@ -103,6 +105,7 @@ class App(customtkinter.CTk):
         return page_res
 
 
+    # 范围：pdf文本比较
     # 单张图片去水印
     def mt_pic_remove_watermark(self, index, page, pdf_file, img_folder):
             rotate = int(0)
@@ -119,7 +122,8 @@ class App(customtkinter.CTk):
             print(f"    {pdf_file} 第 {index+1} 页水印去除完成")
             self.status_message_add(f"        {pdf_file} 第 {index+1} 页去水印完成")
             
-            
+
+    # 范围：pdf文本比较
     # pdf 每一页转图片, 然后图片去水印
     def pdf_to_pic_remove_watermark(self, pdf_file, img_folder):
         t_list = []
@@ -128,7 +132,8 @@ class App(customtkinter.CTk):
         for index, page in enumerate(pdf):
             self.mt_pic_remove_watermark(index, page, pdf_file, img_folder)
         
-        
+
+    # 范围：pdf文本比较
     # 获取 文本文件内容
     def get_file_content(self, file_path):
         lines = []
@@ -136,7 +141,8 @@ class App(customtkinter.CTk):
             lines = f.read().splitlines()
         return lines 
     
-    
+
+    # 范围：pdf文本比较
     # 文本内容进行比较，生成diff文件
     def compare_file(self, file1, file2):
         lines1 = self.get_file_content(file1)
@@ -151,6 +157,7 @@ class App(customtkinter.CTk):
             f.write(result)
             
 
+    # 范围：pdf文本比较
     # auto 模式获取 pdf 文件的内容
     def get_pdf_auto(self, pdf_file, img_folder):
         total_res = ""
@@ -175,7 +182,8 @@ class App(customtkinter.CTk):
         with open(os.path.join(img_folder, "text_content.txt"), "w", encoding="utf-8") as f:
             f.write(total_res)
             
-            
+
+    # 范围：pdf文本比较
     # 文本模式获取 pdf 文件的内容
     def get_pdf_text(self, pdf_file, img_folder):
         total_res = ""
@@ -190,7 +198,8 @@ class App(customtkinter.CTk):
         with open(os.path.join(img_folder, "text_content.txt"), "w", encoding="utf-8") as f:
             f.write(total_res)
     
-    
+
+    # 范围：pdf文本比较
     # 进行相关检验，然后对文本内容进行比较，生成diff文件
     def compare_and_create(self, file1, file2):
         try:
@@ -256,6 +265,7 @@ class App(customtkinter.CTk):
             self.fc_button_compare_file.configure(state="normal")
 
 
+    # 范围：pdf文本比较
     # 状态栏打印信息 初始化
     def status_message_init(self, message):
         self.fc_textbox_log.configure(state=customtkinter.NORMAL)
@@ -263,7 +273,8 @@ class App(customtkinter.CTk):
         self.fc_textbox_log.insert(customtkinter.END, message + "\n")
         self.fc_textbox_log.configure(state=customtkinter.DISABLED)
         
-        
+
+    # 范围：pdf文本比较
     # 状态栏打印信息 增加
     def status_message_add(self, message):
         self.fc_textbox_log.configure(state=customtkinter.NORMAL)
@@ -271,13 +282,74 @@ class App(customtkinter.CTk):
         self.fc_textbox_log.configure(state=customtkinter.DISABLED)
         self.fc_textbox_log.see(customtkinter.END)
         
+
+    # 范围：文件格式转换
+    # 选择文件夹
+    def select_convert_file(self, index):
+        folder = customtkinter.filedialog.askopenfilename()
+        if folder:
+            self.ft_entry_select_file.delete(0, customtkinter.END)
+            self.ft_entry_select_file.insert(0, folder)
+
+
+    # 范围：文件格式转换
+    # 文件格式转换
+    def word2pdf(self, file):
+        try:
+            # 2 后缀名不正确，1 成功，0 异常
+            filepath, filename = os.path.split(file)
+            suffix = filename.split(".")[-1]
+            if suffix.lower() not in ["doc", "docx"]:
+                return 2
+            
+            time_now = datetime.datetime.now()
+            time_str = time_now.strftime('%Y%m%d_%H%M%S')
+            new_file = os.path.join(filepath, filename.split(".")[0] + time_str + ".pdf")
+            
+            word = client.Dispatch("Word.Application")
+            doc = word.Documents.Open(file)  # 打开word文件
+            doc.SaveAs(new_file, 17)
+            doc.Close()
+            word.Quit()
+            return 1
+        except:
+            return 0
+    
+    
+    # 范围：文件格式转换
+    # 文件格式转换
+    def file_convert(self, file):
+        try:
+            self.ft_button_convert.configure(state="disabled")
+
+            # 1 检查是否选择文件
+            if not os.path.isfile(file):
+                CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='请选择要转换的文件！')
+                return
         
+            # 2 文件格式转换
+            if self.ft_mode_var.get() == "word2pdf":
+                r = self.word2pdf(file)
+                if r == 2:
+                    CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='文件后缀名不正确，需为 doc 或 docx')
+                elif r == 0:
+                    CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='文件格式转换失败')
+                elif r == 1:
+                    CTkMessagebox(title='成功', font=self.msg_font, justify="center", option_1="确定", icon="check", width=self.msg_width, height=self.msg_height, message="转换成功，请在程序运行目录查看生成文件。")
+            self.ft_button_convert.configure(state="normal")
+        except:
+            CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message="程序运行异常，请反馈给工具维护人员。")
+            self.ft_button_convert.configure(state="normal")
+            
+ 
+    # 范围：窗口
     def on_closing(self):
             self.destroy()
             self.quit()
             sys.exit()
 
 
+    # 范围：窗口
     # UI 页面
     def user_ui(self):
         # 标签页
@@ -287,9 +359,11 @@ class App(customtkinter.CTk):
 
         # 添加2个选项卡
         tabview01_title1 = "PDF文本比较"
-        tabview01_title2 = "使用说明"
+        tabview01_title2 = "文本转换"
+        tabview01_title_n = "使用说明"
         self.tabview01.add(tabview01_title1)
         self.tabview01.add(tabview01_title2)
+        self.tabview01.add(tabview01_title_n)
 
         # 第一个选项卡 PDF文本比较 fc
         # 第一个选项卡 PDF文本比较 fc
@@ -329,17 +403,40 @@ class App(customtkinter.CTk):
         # log打印
         self.fc_textbox_log = customtkinter.CTkTextbox(self.tabview01.tab(tabview01_title1), bg_color="#000001",width=690, height=180, state=customtkinter.DISABLED, font=self.textbox_font, corner_radius=0)
         self.fc_textbox_log.place(x=30, y=250)
+        
+        
+        # 第二个选项卡 文本转换  ft
+        # 第二个选项卡 文本转换  ft
+        # 第二个选项卡 文本转换  ft
+        # 文件选择
+        self.ft_button_select_file = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="请选择要转换的文件", command=lambda i=1: self.select_convert_file(i), width=140, font=self.button_font)
+        self.ft_button_select_file.place(x=30, y=10)
 
-        # 第二个选项卡 使用说明 rd
-        # 第二个选项卡 使用说明 rd
-        # 第二个选项卡 使用说明 rd
+        self.ft_entry_select_file = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title2), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
+        self.ft_entry_select_file.place(x=195, y=12)
+        
+        # 模式选择
+        self.ft_mode_var = customtkinter.StringVar()
+        self.ft_mode_var.set("word2pdf")
+        self.ft_radio_mode_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title2), text="word 转 pdf", variable=self.ft_mode_var, value="word2pdf", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
+        self.ft_radio_mode_1.place(x=30, y=70)
+
+        # 文件转换
+        self.ft_button_convert = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="文本转换", command=lambda: threading.Thread(target=self.file_convert, args=(self.ft_entry_select_file.get(),)).start(), width=120, font=self.button_font)
+        self.ft_button_convert.place(x=30, y=205)
+
+        
+
+        # 第N个选项卡 使用说明 rd
+        # 第N个选项卡 使用说明 rd
+        # 第N个选项卡 使用说明 rd
         rd_str = '''
                  1 程序运行目录中不能有中文字符。\n
                  2 此程序只在本机运行，不会向其他设备传递任何信息。\n
                  3 目前只进行pdf文件的文本内容比对，不进行格式的比对。\n
                  4 此程序不能完全正确识别pdf文件内容，比较内容仅供参考。\n
                  '''
-        self.rd_textbox = customtkinter.CTkTextbox(self.tabview01.tab(tabview01_title2), width=560, height=400, corner_radius=0)
+        self.rd_textbox = customtkinter.CTkTextbox(self.tabview01.tab(tabview01_title_n), width=560, height=400, corner_radius=0)
         self.rd_textbox.place(x=45, y=20)
         self.rd_textbox.insert("0.0", rd_str)  # insert at line 0 character 0
         self.rd_textbox.configure(state="disabled")  # configure textbox to be read-only
