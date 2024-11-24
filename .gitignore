@@ -1,5 +1,6 @@
 ch_ppocr_mobile*
 ch_PP-OCR*
+__pycache__*
 *.pdf
 *.PDF
 *.doc
