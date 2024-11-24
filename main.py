@@ -722,8 +722,7 @@ class App(customtkinter.CTk):
         rd_str = '''
                  1 程序运行目录中不能有中文字符。\n
                  2 此程序只在本机运行，不会向其他设备传递任何信息。\n
-                 3 目前只进行pdf文件的文本内容比对，不进行格式的比对。\n
-                 4 此程序不能完全正确识别pdf文件内容，比较内容仅供参考。\n
+                 3 此程序所生成的文件结果仅供参考。\n
                  '''
         self.rd_textbox = customtkinter.CTkTextbox(self.tabview01.tab(tabview01_title_n), width=560, height=400, corner_radius=0)
         self.rd_textbox.place(x=45, y=20)

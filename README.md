@@ -9,8 +9,7 @@
 **重点：**  
 1 程序运行目录中不能有中文字符。  
 2 此程序只在本机运行，不会向其他设备传递任何信息。  
-3 目前只进行pdf文件的文本内容比对，不进行格式的比对。  
-4 此程序不能完全正确识别pdf文件内容，比较内容仅供参考。  
+3 此程序所生成的文件结果仅供参考。
 
 ## 环境说明
 已在下面环境中进行验证。  
@@ -30,18 +29,18 @@ pip install requirement.txt
 
 ## 代码运行
 ```py
-python compare_pdf.py
+python main.py
 ```
 
 ## 打包EXE文件
 **1、运行代码文件**  
 ```py
-python compare_pdf.py
+python main.py
 ```
 
 **2、执行打包命令**
 ```py
-pyinstaller -w --collect-all paddleocr --collect-all pyclipper --collect-all imghdr --collect-all skimage --collect-all imgaug --collect-all scipy.io --collect-all lmdb  --collect-all requests -y compare_pdf.py
+pyinstaller -w --collect-all paddleocr --collect-all pyclipper --collect-all imghdr --collect-all skimage --collect-all imgaug --collect-all scipy.io --collect-all lmdb  --collect-all requests -y main.py
 ```
 
 **3、添加模型相关文件**  
@@ -50,4 +49,4 @@ pyinstaller -w --collect-all paddleocr --collect-all pyclipper --collect-all img
 **4、添加dll文件**  
 将python安装包目录 Lib/site-packages/paddle/libs 下面的所有文件拷贝到 dist/compare_pdf/_internal/paddle/libs 目录下。  
 
-**此时，dist\compare_pdf 目录下的 compare_pdf.exe 可以正常运行。**
+**此时，dist\compare_pdf 目录下的 main.exe 可以正常运行。**
