@@ -6,6 +6,7 @@ import threading
 from itertools import product
 import math
 from typing import Union, Tuple
+import json
 
 import fitz
 from paddleocr import PaddleOCR
@@ -20,8 +21,8 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import  TTFont
 
-
 from config import pdf_font_dict
+
 
 
 
@@ -128,7 +129,7 @@ class App(customtkinter.CTk):
 
     # 范围：pdf文本比较
     # 单张图片去水印
-    def mt_pic_remove_watermark(self, index, page, pdf_file, img_folder):
+    def mt_pic_remove_watermark(self, index, page, pdf_file, img_folder, print_compare_status_msg=True, wm_threshold=600):
             rotate = int(0)
             # 每个尺寸的缩放系数为2，这将为我们生成分辨率提高4倍的图像
             # zoom_x, zoom_y = 2, 2
@@ -137,11 +138,12 @@ class App(customtkinter.CTk):
             pixmap = page.get_pixmap(matrix=trans, alpha=False)
             for pos in product(range(pixmap.width), range(pixmap.height)):
                 rgb = pixmap.pixel(pos[0], pos[1])
-                if (sum(rgb) >= 600):
+                if (sum(rgb) >= wm_threshold):
                     pixmap.set_pixel(pos[0], pos[1], (255, 255, 255))
             pixmap.pil_save(os.path.join(img_folder, "pdf_split_" + str(index+1).zfill(3) + ".png"))
             print(f"    {pdf_file} 第 {index+1} 页水印去除完成")
-            self.status_message_add(f"        {pdf_file} 第 {index+1} 页去水印完成")
+            if print_compare_status_msg:
+                self.status_message_add(f"        {pdf_file} 第 {index+1} 页去水印完成")
             
 
     # 范围：pdf文本比较
@@ -455,82 +457,121 @@ class App(customtkinter.CTk):
         if not os.path.isfile(select_pdf):
             CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='请选择要处理的PDF文件！')
             return
-        
-        # 获取页面各种变量
-        watermark_content = self.wh_entry_w_c.get()
-        if watermark_content == "":
-            CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='请填写水印内容！')
-            return
-            
-        select_font_type = self.wh_combobox_font_type.get()
-        
-        try:
-            select_font_size = int(self.wh_combobox_font_size.get())
-        except:
-            CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='字体大小选择有误，请重新选择！')
-            return
 
-        
-        wm_row_num = int(self.wh_combobox_w_row.get())
-        
-        wm_col_num = int(self.wh_combobox_w_col.get())
-        
-        try:
-            wm_angle = int(self.wh_combobox_w_angle.get())
-        except:
-            CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='水印角度选择有误，请重新选择！')
-            return
-        
-        try:
-            wm_offset_x = int(self.wh_combobox_w_offset_x.get())
-        except:
-            CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='水印偏移x 选择有误，请重新选择！')
-            return
-            
-        try:
-            wm_offset_y = int(self.wh_combobox_w_offset_y.get())
-        except:
-            CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='水印偏移y 选择有误，请重新选择！')
-            return
-
-        wm_transparency = float(self.wh_combobox_w_transparency.get())
-
-        self.wh_button_pdf.configure(state="disabled")
-        # 获取所选择的pdf文件的尺寸
-        try:
-            with pymupdf.open(select_pdf) as doc:
-                page = doc[0]
-                page_width = page.rect.width
-                page_height = page.rect.height
-        except:
-            CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='所选择的pdf文件有问题，请重新选择！')
-            self.wh_button_pdf.configure(state="normal")
-            return
+        # 判断添加或者删除水印
+        if self.wh_mode_add_del_var.get() == "add":
+            # 添加水印
+            # 获取页面各种变量
+            watermark_content = self.wh_entry_w_c.get()
+            if watermark_content == "":
+                CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='请填写水印内容！')
+                return
                 
+            select_font_type = self.wh_combobox_font_type.get()
+            
+            try:
+                select_font_size = int(self.wh_combobox_font_size.get())
+            except:
+                CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='字体大小选择有误，请重新选择！')
+                return
 
-        # 创建 pdf 水印模板
-        self.create_wartmark(content=watermark_content,
-                             filename=self.pdf_watermark_template,
-                             width=page_width,
-                             height=page_height,
-                             font=select_font_type,
-                             fontsize=select_font_size,
-                             x_offset=wm_offset_x,
-                             y_offset=wm_offset_y,
-                             angle=wm_angle,
-                             text_fill_alpha=wm_transparency)
-        
-        # 添加水印        
-        self.add_watemark(target_pdf_path=select_pdf,
-                          watermark_pdf_path=self.pdf_watermark_template,
-                          nrow = wm_row_num,
-                          ncol = wm_col_num)
-                             
-        CTkMessagebox(title='水印添加成功', font=self.msg_font, justify="center", option_1="确定", icon="check", width=self.msg_width, height=self.msg_height, message="水印添加成功。请在所选择的pdf文件目录查看！")
-        self.wh_button_pdf.configure(state="normal")
+            wm_row_num = int(self.wh_combobox_w_row.get())
+            
+            wm_col_num = int(self.wh_combobox_w_col.get())
+            
+            try:
+                wm_angle = int(self.wh_combobox_w_angle.get())
+            except:
+                CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='水印角度选择有误，请重新选择！')
+                return
+            
+            try:
+                wm_offset_x = int(self.wh_combobox_w_offset_x.get())
+            except:
+                CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='水印偏移x 选择有误，请重新选择！')
+                return
+                
+            try:
+                wm_offset_y = int(self.wh_combobox_w_offset_y.get())
+            except:
+                CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='水印偏移y 选择有误，请重新选择！')
+                return
+
+            wm_transparency = float(self.wh_combobox_w_transparency.get())
+
+            self.wh_button_pdf.configure(state="disabled")
+            # 获取所选择的pdf文件的尺寸
+            try:
+                with pymupdf.open(select_pdf) as doc:
+                    page = doc[0]
+                    page_width = page.rect.width
+                    page_height = page.rect.height
+            except:
+                CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='所选择的pdf文件有问题，请重新选择！')
+                self.wh_button_pdf.configure(state="normal")
+                return
+
+            # 创建 pdf 水印模板
+            self.create_wartmark(content=watermark_content,
+                                 filename=self.pdf_watermark_template,
+                                 width=page_width,
+                                 height=page_height,
+                                 font=select_font_type,
+                                 fontsize=select_font_size,
+                                 x_offset=wm_offset_x,
+                                 y_offset=wm_offset_y,
+                                 angle=wm_angle,
+                                 text_fill_alpha=wm_transparency)
+            
+            # 添加水印        
+            self.add_watemark(target_pdf_path=select_pdf,
+                              watermark_pdf_path=self.pdf_watermark_template,
+                              nrow = wm_row_num,
+                              ncol = wm_col_num)
+                                 
+            CTkMessagebox(title='水印添加成功', font=self.msg_font, justify="center", option_1="确定", icon="check", width=self.msg_width, height=self.msg_height, message="水印添加成功。请在所选择的pdf文件目录查看！")
+            self.wh_button_pdf.configure(state="normal")
+        else:
+            # 删除水印
+            # 判断图片模式 还是 纯文本模式
+            self.wh_button_pdf.configure(state="disabled")
+            
+            wm_threshold = int(self.wh_combobox_w_threshold.get())
+
+            # 图片模式
+            temp_img_folder_remove_wm_1 = os.path.join(self.file_directory, "temp_img_folder_remove_wm_1")
+            if os.path.isdir(temp_img_folder_remove_wm_1):
+                shutil.rmtree(temp_img_folder_remove_wm_1)
+            os.mkdir(temp_img_folder_remove_wm_1)
+
+            open_file = fitz.open(select_pdf)
+            for index, page in enumerate(open_file):
+                # 去水印
+                self.mt_pic_remove_watermark(index, page, select_pdf, temp_img_folder_remove_wm_1, print_compare_status_msg=False, wm_threshold=wm_threshold)
+            self.pic_2_pdf_for_dir(temp_img_folder_remove_wm_1, select_pdf)
+            CTkMessagebox(title='水印删除成功', font=self.msg_font, justify="center", option_1="确定", icon="check", width=self.msg_width, height=self.msg_height, message="水印删除成功。请在所选择的pdf文件目录查看！")
+
+            self.wh_button_pdf.configure(state="normal")
 
 
- 
+    # 范围：水印操作
+    # 文件夹下的图片转成一个pdf
+    def pic_2_pdf_for_dir(self, img_folder, select_pdf):
+        pdf = fitz.open()
+        img_files = sorted(os.listdir(img_folder), key=lambda x: str(x).split('.')[0])
+        img_type = ["png", "jpg", "jpeg", "bmp"]
+        for img in img_files:
+            if img.split(".")[-1].lower() in img_type:
+                imgdoc = fitz.open(os.path.join(img_folder, img))
+                #将打开后的图片转成单页pdf
+                pdfbytes = imgdoc.convert_to_pdf()
+                imgpdf = fitz.open("pdf", pdfbytes)
+                #将单页pdf插入到新的pdf文档中
+                pdf.insert_pdf(imgpdf)
+        pdf.save(select_pdf[:-4] + '_已移除水印.pdf')
+        pdf.close()
+
+
     # 范围：窗口
     def on_closing(self):
             self.destroy()
@@ -627,14 +668,6 @@ class App(customtkinter.CTk):
         self.wh_entry_select_file = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title3), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
         self.wh_entry_select_file.place(x=195, y=12)
         
-        # 类型模式选择
-        self.wh_mode_var = customtkinter.StringVar()
-        self.wh_mode_var.set("pic")
-        self.wh_radio_mode_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title3), text="图片模式", variable=self.wh_mode_var, value="pic", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
-        self.wh_radio_mode_1.place(x=230, y=70)
-        self.wh_radio_mode_2 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title3), text="纯文本模式", variable=self.wh_mode_var, value="only_text", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
-        self.wh_radio_mode_2.place(x=230, y=95)
-        
         # 处理模式选择
         self.wh_mode_add_del_var = customtkinter.StringVar()
         self.wh_mode_add_del_var.set("add")
@@ -695,7 +728,13 @@ class App(customtkinter.CTk):
         wh_label_w_transparency = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="透明度", font=self.entry_font).place(x=250, y=208)
         self.wh_combobox_w_transparency = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ "0.2", "0.3", "0.4", "0.5"], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
         self.wh_combobox_w_transparency.place(x=320, y=210)
-        self.wh_combobox_w_transparency.set("0.3")
+        self.wh_combobox_w_transparency.set("0.2")
+        
+        # 水印阈值
+        wh_label_w_threshold = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印阈值", font=self.entry_font).place(x=245, y=313)
+        self.wh_combobox_w_threshold = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ "400", "500", "550", "600", "650"], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
+        self.wh_combobox_w_threshold.place(x=320, y=315)
+        self.wh_combobox_w_threshold.set("600")
 
         # 说明窗口
         wh_readme = "\n" + \
@@ -703,7 +742,8 @@ class App(customtkinter.CTk):
                     "1 水印偏移x/y可以调整水印的位置。\n\n" + \
                     "2 本地字体类型的路径 'C:\Windows\Fonts'，字体类型通过 config.py 进行配置。\n\n" + \
                     "3 生成的pdf文件在所选择的pdf文件目录中。\n\n" + \
-                    "4 图片模式和纯文本模式只针对删除水印有效。"
+                    "4 水印如果没有去除，可适当降低水印阈值。\n\n"
+
         self.wh_textbox_readme = customtkinter.CTkTextbox(self.tabview01.tab(tabview01_title3), width=280, height=368, corner_radius=0)
         self.wh_textbox_readme.place(x=440, y=60)
         self.wh_textbox_readme.insert("0.0", wh_readme)
