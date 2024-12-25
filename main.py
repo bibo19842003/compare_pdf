@@ -591,7 +591,7 @@ class App(customtkinter.CTk):
         tabview01_title1 = "PDF文本比较"
         tabview01_title2 = "文本转换"
         tabview01_title3 = "水印操作"
-        tabview01_title_n = "使用说明"
+        tabview01_title_n = "声明"
         self.tabview01.add(tabview01_title1)
         self.tabview01.add(tabview01_title2)
         self.tabview01.add(tabview01_title3)
@@ -655,7 +655,7 @@ class App(customtkinter.CTk):
 
         # 文件转换
         self.ft_button_convert = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="文本转换", command=lambda: threading.Thread(target=self.file_convert, args=(self.ft_entry_select_file.get(),)).start(), width=120, font=self.button_font)
-        self.ft_button_convert.place(x=30, y=205)
+        self.ft_button_convert.place(x=30, y=130)
         
         
         # 第三个选项卡 水印操作  wh
@@ -756,9 +756,9 @@ class App(customtkinter.CTk):
 
         
 
-        # 第N个选项卡 使用说明 rd
-        # 第N个选项卡 使用说明 rd
-        # 第N个选项卡 使用说明 rd
+        # 第N个选项卡 声明 rd
+        # 第N个选项卡 声明 rd
+        # 第N个选项卡 声明 rd
         rd_str = '''
                  1 程序运行目录中不能有中文字符。\n
                  2 此程序只在本机运行，不会向其他设备传递任何信息。\n
