@@ -20,6 +20,8 @@ from reportlab.lib import units
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import  TTFont
+import cv2
+from PIL import Image, ImageEnhance
 
 from config import pdf_font_dict
 
@@ -572,6 +574,76 @@ class App(customtkinter.CTk):
         pdf.close()
 
 
+    # 范围：图片处理
+    # 选择文件夹
+    def select_convert_folder(self, select_folder):
+        folder = customtkinter.filedialog.askdirectory(title="请选择含有图片的文件夹")
+        if folder:
+            select_folder.delete(0, customtkinter.END)
+            select_folder.insert(0, folder)
+
+
+    # 范围：图片处理
+    # 文件格式转换
+    def get_image_from_folder(self, folder):
+        image_list = []
+        image_suffix_list = ["jpg", "JPG", "jpeg", "JPEG", "jfif", "JFIF", "png", "PNG", "bmp", "BMP"]
+        try:
+            # 获取图片名称
+            for item in os.listdir(folder):
+                if "." in item:
+                    suffix = item.split(".")[-1]
+                    if suffix in image_suffix_list:
+                        image_list.append(item)
+            return image_list
+        except:
+            return 0
+            
+            
+    # 范围：图片处理
+    # 文件格式转换
+    def image_enhance_clear(self, image_list, input_folder, output_folder):
+        for img_file in image_list:
+            # 读取原始图像
+            image = cv2.imread(os.path.join(input_folder, img_file))
+            # 创建高斯模糊器对象并应用于图像
+            blurred_image = cv2.GaussianBlur(image, (5, 5), 0)
+            # 对降噪后的图像进行锐化处理
+            enhancer = ImageEnhance.Contrast(Image.fromarray(image))
+            sharp_img = enhancer.enhance(2)  # 锐化系数可以根据实际情况调整
+            # binary_img = Image.fromarray(np.uint8(sharp_img))
+            sharp_img.save(os.path.join(output_folder, img_file))
+    
+    
+    # 范围：图片处理
+    # 文件格式转换
+    def folder_convert(self, input_folder, output_folder):
+        try:
+            self.ih_button_convert.configure(state="disabled")
+
+            # 1 检查是否选择文件夹
+            if os.path.isdir(input_folder) and os.path.isdir(output_folder):
+                pass
+            else:
+                CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='请选择输入输出的文件夹！')
+                return
+        
+            # 2 文件格式转换
+            image_list = self.get_image_from_folder(input_folder)
+            if not image_list:
+                CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='所选择的要处理文件夹没有检测到图片！')
+                self.ih_button_convert.configure(state="normal")
+                return
+
+            if self.ih_mode_var.get() == "image_enhance":
+                self.image_enhance_clear(image_list, input_folder, output_folder)
+                CTkMessagebox(title='成功', font=self.msg_font, justify="center", option_1="确定", icon="check", width=self.msg_width, height=self.msg_height, message="请到输出文件夹进行查看处理后的文件。")
+            self.ih_button_convert.configure(state="normal")
+        except:
+            CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message="程序运行异常，请反馈给工具维护人员。")
+            self.ih_button_convert.configure(state="normal")
+            
+
     # 范围：窗口
     def on_closing(self):
             self.destroy()
@@ -591,10 +663,12 @@ class App(customtkinter.CTk):
         tabview01_title1 = "PDF文本比较"
         tabview01_title2 = "文本转换"
         tabview01_title3 = "水印操作"
+        tabview01_title4 = "图片操作"
         tabview01_title_n = "声明"
         self.tabview01.add(tabview01_title1)
         self.tabview01.add(tabview01_title2)
         self.tabview01.add(tabview01_title3)
+        self.tabview01.add(tabview01_title4)
         self.tabview01.add(tabview01_title_n)
 
         # 第一个选项卡 PDF文本比较 fc
@@ -754,6 +828,32 @@ class App(customtkinter.CTk):
         self.wh_button_pdf.place(x=100, y=405)
 
 
+        # 第四个选项卡 图片操作  ih
+        # 第四个选项卡 图片操作  ih
+        # 第四个选项卡 图片操作  ih
+        # 输入文件夹选择
+        self.ih_entry_select_folder = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title4), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
+        self.ih_entry_select_folder.place(x=195, y=12)
+        
+        self.ih_button_select_folder = customtkinter.CTkButton(self.tabview01.tab(tabview01_title4), text="请选择要处理的文件夹", command=lambda i=1: self.select_convert_folder(self.ih_entry_select_folder), width=140, font=self.button_font)
+        self.ih_button_select_folder.place(x=30, y=10)
+
+        # 输出文件夹选择
+        self.ih_entry_select_output_folder = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title4), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
+        self.ih_entry_select_output_folder.place(x=195, y=72)
+        
+        self.ih_button_select_output_folder = customtkinter.CTkButton(self.tabview01.tab(tabview01_title4), text="请选择输出文件夹", command=lambda i=1: self.select_convert_folder(self.ih_entry_select_output_folder), width=140, font=self.button_font)
+        self.ih_button_select_output_folder.place(x=30, y=70)
+
+        # 模式选择
+        self.ih_mode_var = customtkinter.StringVar()
+        self.ih_mode_var.set("image_enhance")
+        self.ih_radio_mode_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title4), text="图片文字变清晰", variable=self.ih_mode_var, value="image_enhance", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
+        self.ih_radio_mode_1.place(x=30, y=130)
+
+        # 文件夹转换
+        self.ih_button_convert = customtkinter.CTkButton(self.tabview01.tab(tabview01_title4), text="处理", command=lambda: threading.Thread(target=self.folder_convert, args=(self.ih_entry_select_folder.get(), self.ih_entry_select_output_folder.get())).start(), width=120, font=self.button_font)
+        self.ih_button_convert.place(x=30, y=190)
         
 
         # 第N个选项卡 声明 rd
