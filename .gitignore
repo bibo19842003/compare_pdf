@@ -9,3 +9,6 @@ __pycache__*
 *.DOCX
 temp*
 TEMP*
+build*
+dist*
+*.spec

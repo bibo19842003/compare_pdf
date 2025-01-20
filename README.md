@@ -44,9 +44,9 @@ pyinstaller -w --collect-all paddleocr --collect-all pyclipper --collect-all img
 ```
 
 **3、添加模型相关文件**  
-将 *ch_ppocr_mobile_v2.0_cls_infer*  *ch_PP-OCRv4_det_infer*  *ch_PP-OCRv4_rec_infer* 三个文件夹复制到 dist/compare_pdf/_internal 目录下，若没有那3个目录，执行第一步运行代码文件会从网络下载并生成。  
+将 *ch_ppocr_mobile_v2.0_cls_infer*   *ch_PP-OCRv4_det_infer*   *ch_PP-OCRv4_rec_infer* 三个文件夹复制到 dist/main/_internal 目录下，若没有那3个目录，执行第一步运行代码文件会从网络下载并生成。  
 
 **4、添加dll文件**  
-将python安装包目录 Lib/site-packages/paddle/libs 下面的所有文件拷贝到 dist/compare_pdf/_internal/paddle/libs 目录下。  
+将python安装包目录 Lib/site-packages/paddle/libs 下面的所有文件拷贝到 dist/main/_internal/paddle/libs 目录下。  
 
-**此时，dist\compare_pdf 目录下的 main.exe 可以正常运行。**
+**此时，dist\main 目录下的 main.exe 可以正常运行。**
