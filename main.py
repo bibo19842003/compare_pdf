@@ -339,7 +339,21 @@ class App(customtkinter.CTk):
             return 1
         except:
             return 0
-    
+
+
+    # 范围：文件格式转换
+    # 图片批量转pdf，多个图片合成一个pdf
+    def images_to_1_pdf(self, image_list, input_folder):
+        open_image_list = []
+        for img_file in image_list:
+            img = Image.open(os.path.join(input_folder, img_file))
+            open_image_list.append(img)
+
+        time_now = datetime.datetime.now()
+        time_str = time_now.strftime('%Y%m%d_%H%M%S')
+        imgMerge = open_image_list.pop(0)
+        imgMerge.save(time_str + 'img_to_pdf.pdf',"PDF", resolution=100.0, save_all=True, append_images=open_image_list)
+
     
     # 范围：文件格式转换
     # 文件格式转换
@@ -367,6 +381,35 @@ class App(customtkinter.CTk):
             self.ft_button_convert.configure(state="normal")
 
 
+    # 范围：文件格式转换
+    # 文件格式批量转换
+    def batch_file_convert(self, input_folder):
+        try:
+            self.ft_button_folder_convert.configure(state="disabled")
+
+            # 1 检查是否选择文件夹
+            if os.path.isdir(input_folder):
+                pass
+            else:
+                CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='请选择输入文件夹！')
+                return
+        
+            # 2 文件格式转换
+            image_list = self.get_image_from_folder(input_folder)
+            if not image_list:
+                CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='所选择的要处理文件夹没有检测到图片！')
+                self.ft_button_folder_convert.configure(state="normal")
+                return
+
+            if self.ft_mode_folder_var.get() == "image2pdf":
+                self.images_to_1_pdf(image_list, input_folder)
+                CTkMessagebox(title='成功', font=self.msg_font, justify="center", option_1="确定", icon="check", width=self.msg_width, height=self.msg_height, message="请到当前目录下查看生成的文件。")
+            self.ft_button_folder_convert.configure(state="normal")
+        except:
+            CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message="程序运行异常，请反馈给工具维护人员。")
+            self.ft_button_folder_convert.configure(state="normal")
+            
+            
     # 范围：水印操作
     # 选择文件
     def wh_select_convert_file(self, index):
@@ -730,6 +773,25 @@ class App(customtkinter.CTk):
         # 文件转换
         self.ft_button_convert = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="文本转换", command=lambda: threading.Thread(target=self.file_convert, args=(self.ft_entry_select_file.get(),)).start(), width=120, font=self.button_font)
         self.ft_button_convert.place(x=30, y=130)
+        
+        # 文件夹内批量转换
+        # 文件夹内批量转换
+        # 输入文件夹选择
+        self.ft_entry_select_folder = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title2), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
+        self.ft_entry_select_folder.place(x=195, y=262)
+        
+        self.ft_button_select_folder = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="请选择输入文件夹", command=lambda i=1: self.select_convert_folder(self.ft_entry_select_folder), width=140, font=self.button_font)
+        self.ft_button_select_folder.place(x=30, y=260)
+
+        # 模式选择
+        self.ft_mode_folder_var = customtkinter.StringVar()
+        self.ft_mode_folder_var.set("image2pdf")
+        self.ft_radio_mode_folder_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title2), text="图片合成PDF", variable=self.ft_mode_folder_var, value="image2pdf", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
+        self.ft_radio_mode_folder_1.place(x=30, y=320)
+
+        # 文件转换
+        self.ft_button_folder_convert = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="转换", command=lambda: threading.Thread(target=self.batch_file_convert, args=(self.ft_entry_select_folder.get(),)).start(), width=120, font=self.button_font)
+        self.ft_button_folder_convert.place(x=30, y=380)
         
         
         # 第三个选项卡 水印操作  wh
