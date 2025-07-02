@@ -121,9 +121,10 @@ class App(customtkinter.CTk):
         page_res = f"以下是第 {index+1} 页内容 \n"
         for idx in range(len(result)):
             res = result[idx]
-            for line in res:
-                res_line = line[1][0] + "\n"
-                page_res += res_line
+            if res:
+                for line in res:
+                    res_line = line[1][0] + "\n"
+                    page_res += res_line
         page_res += "\n"
             
         return page_res
@@ -283,11 +284,13 @@ class App(customtkinter.CTk):
             self.status_message_add("\n'comparison.html' 已生成，请用浏览器打开。生成文件在程序运行的目录下查看。")
             CTkMessagebox(title='成功', font=self.msg_font, justify="center", option_1="确定", icon="check", width=self.msg_width, height=self.msg_height, message="'comparison.html' 已在程序运行的目录生成，请用浏览器打开。")
             self.fc_button_compare_file.configure(state="normal")
+
         except:
             print("程序运行异常，请反馈给工具维护人员。")
             self.status_message_add("程序运行异常，请反馈给工具维护人员。\n程序运行异常，请反馈给工具维护人员。\n程序运行异常，请反馈给工具维护人员。\n")
             CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message="程序运行异常，请反馈给工具维护人员。")
             self.fc_button_compare_file.configure(state="normal")
+
 
 
     # 范围：pdf文本比较
