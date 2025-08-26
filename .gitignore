@@ -12,3 +12,7 @@ TEMP*
 build*
 dist*
 *.spec
+*.html
+*.png
+*.jpg
+PP-OCRv5*

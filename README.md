@@ -33,20 +33,10 @@ python main.py
 ```
 
 ## 打包EXE文件
-**1、运行代码文件**  
-```py
-python main.py
-```
+目前，打包出的exe文件运行报错，待后续完善。
 
-**2、执行打包命令**
-```py
-pyinstaller -w --collect-all paddleocr --collect-all pyclipper --collect-all imghdr --collect-all skimage --collect-all imgaug --collect-all scipy.io --collect-all lmdb  --collect-all requests -y main.py
-```
-
-**3、添加模型相关文件**  
-将 *ch_ppocr_mobile_v2.0_cls_infer*   *ch_PP-OCRv4_det_infer*   *ch_PP-OCRv4_rec_infer* 三个文件夹复制到 dist/main/_internal 目录下，若没有那3个目录，执行第一步运行代码文件会从网络下载并生成。  
-
-**4、添加dll文件**  
-将python安装包目录 Lib/site-packages/paddle/libs 下面的所有文件拷贝到 dist/main/_internal/paddle/libs 目录下。  
-
-**此时，dist\main 目录下的 main.exe 可以正常运行。**
+## 其他说明
+**1、运行设备**  
+代码使用CPU运行，非GPU运行；如果想使用GPU运行，请卸载 paddleocr 并安装 paddleocr-gpu。
+**2、模型版本**  
+OCR 模型版本为 PP-OCRv5，若使用 v4 版本，请将代码切换到分支 main_ocr_v4 。

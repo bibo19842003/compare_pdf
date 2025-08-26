@@ -56,11 +56,16 @@ class App(customtkinter.CTk):
         self.msg_height = 150
 
         # paddle ocr 初始化
-        det_model_dir = os.path.join(self.file_directory, "ch_PP-OCRv4_det_infer")
-        rec_model_dir = os.path.join(self.file_directory, "ch_PP-OCRv4_rec_infer")
-        cls_model_dir = os.path.join(self.file_directory, "ch_ppocr_mobile_v2.0_cls_infer")
-        self.ocr = PaddleOCR(use_angle_cls=True, lang="ch", use_gpu=False, det_model_dir=det_model_dir, rec_model_dir=rec_model_dir, cls_model_dir=cls_model_dir)
-        
+        text_detection_model_dir = os.path.join(self.file_directory, "PP-OCRv5_server_det")
+        text_recognition_model_dir = os.path.join(self.file_directory, "PP-OCRv5_server_rec")
+        self.ocr = PaddleOCR(
+                            use_doc_orientation_classify=False,
+                            use_doc_unwarping=False,
+                            use_textline_orientation=False,
+                            text_detection_model_dir=text_detection_model_dir, 
+                            text_recognition_model_dir=text_recognition_model_dir, 
+                            )
+
         # pdf 字体类型加载
         self.pdf_watermark_template = os.path.join(self.file_directory, "pdf_watermark_template.pdf")
         self.sys_font_list = [ i for i in os.listdir(r"C:\Windows\Fonts")]
@@ -68,7 +73,7 @@ class App(customtkinter.CTk):
         for k in self.pdf_font_list:
             pdfmetrics.registerFont(TTFont(k, os.path.join("C:\Windows\Fonts", pdf_font_dict[k])))
 
-        
+
         self.user_ui()
         
 
@@ -98,14 +103,19 @@ class App(customtkinter.CTk):
         total_res = ""
         for index, j in enumerate(img_sort_list):
             image_file = os.path.join(self.file_directory, img_folder, j)
-            self.status_message_add(f"        {file} 第 {index+1} 页去水印 启动")
-            result = ocr.ocr(image_file, cls=True)
+            self.status_message_add(f"        {file} 第 {index+1} 页获取文本 启动")
+            
+            result = ocr.predict(input=image_file)
             total_res += f"以下是第 {index+1} 页内容 \n"
-            for idx in range(len(result)):
-                res = result[idx]
-                for line in res:
-                    res_line = line[1][0] + "\n"
-                    total_res += res_line
+
+            for res in result:
+                # res.print()
+                page_result = res["rec_texts"]
+                if len(page_result) > 0:
+                    for line in page_result:
+                        res_line = line + "\n"
+                        total_res += res_line
+
             total_res += "\n"
             
         with open(os.path.join(img_folder, "text_content.txt"), "w", encoding="utf-8") as f:
@@ -117,13 +127,15 @@ class App(customtkinter.CTk):
     def paddleocr_get_single_pic_text(self, ocr, img_folder, file, index):
         image_file = os.path.join(self.file_directory, img_folder, "pdf_split_" + str(index+1).zfill(3) + ".png")
         self.status_message_add(f"        {file} 第 {index+1} 页获取去水印后的文件内容")
-        result = ocr.ocr(image_file, cls=True)
+        result = ocr.predict(input=image_file)
         page_res = f"以下是第 {index+1} 页内容 \n"
-        for idx in range(len(result)):
-            res = result[idx]
-            if res:
-                for line in res:
-                    res_line = line[1][0] + "\n"
+
+        for res in result:
+            # res.print()
+            page_result = res["rec_texts"]
+            if len(page_result) > 0:
+                for line in page_result:
+                    res_line = line + "\n"
                     page_res += res_line
         page_res += "\n"
             
