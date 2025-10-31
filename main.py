@@ -7,6 +7,7 @@ from itertools import product
 import math
 from typing import Union, Tuple
 import json
+import platform
 
 import fitz
 from paddleocr import PaddleOCR
@@ -41,7 +42,7 @@ class App(customtkinter.CTk):
         self.combox_font = customtkinter.CTkFont(family="微软雅黑", size=14)
         self.font = customtkinter.CTkFont(family="微软雅黑", size=22)
         self.label_font = customtkinter.CTkFont(family="Arial", size=24)
-        self.title("PDF文本比较工具 v1.3.0_beta")
+        self.title("PDF文本比较工具 v1.4.0_beta")
         self.geometry(("750x500"))
         self.resizable(0,0)
         self.configure(fg_color="#FDE6E0")
@@ -71,7 +72,7 @@ class App(customtkinter.CTk):
         self.sys_font_list = [ i for i in os.listdir(r"C:\Windows\Fonts")]
         self.pdf_font_list = [ k for k, v in pdf_font_dict.items() if v in self.sys_font_list]
         for k in self.pdf_font_list:
-            pdfmetrics.registerFont(TTFont(k, os.path.join("C:\Windows\Fonts", pdf_font_dict[k])))
+            pdfmetrics.registerFont(TTFont(k, os.path.join(r"C:\Windows\Fonts", pdf_font_dict[k])))
 
 
         self.user_ui()
@@ -714,15 +715,15 @@ class App(customtkinter.CTk):
     def user_ui(self):
         # 标签页
         customtkinter.CTkTabview._outer_button_overhang = 15
-        self.tabview01 = customtkinter.CTkTabview(master=self, width=755, height=505, fg_color="#FDE6E0", segmented_button_fg_color="#FDE6E0", segmented_button_selected_color="#4F86EC", segmented_button_unselected_color="gray", border_width=2, corner_radius=0, bg_color="#FDE6E0", segmented_button_font=self.button_font)
+        self.tabview01 = customtkinter.CTkTabview(master=self, width=755, height=505, fg_color="#FDE6E0", segmented_button_fg_color="#FDE6E0", segmented_button_selected_color="#4F86EC", segmented_button_unselected_color="gray", border_width=2, corner_radius=0, bg_color="#FDE6E0")
         self.tabview01.place(x=-2, y=5)
 
         # 添加2个选项卡
-        tabview01_title1 = "PDF文本比较"
-        tabview01_title2 = "文本转换"
-        tabview01_title3 = "水印操作"
-        tabview01_title4 = "图片操作"
-        tabview01_title_n = "声明"
+        tabview01_title1 = " PDF文本比较 "
+        tabview01_title2 = " 文本转换 "
+        tabview01_title3 = " 水印操作 "
+        tabview01_title4 = " 图片操作 "
+        tabview01_title_n = " 声明 "
         self.tabview01.add(tabview01_title1)
         self.tabview01.add(tabview01_title2)
         self.tabview01.add(tabview01_title3)
@@ -891,7 +892,7 @@ class App(customtkinter.CTk):
         wh_readme = "\n" + \
                     "说明:\n\n" + \
                     "1 水印偏移x/y可以调整水印的位置。\n\n" + \
-                    "2 本地字体类型的路径 'C:\Windows\Fonts'，字体类型通过 config.py 进行配置。\n\n" + \
+                    "2 本地字体类型的路径 'C:/Windows/Fonts'，字体类型通过 config.py 进行配置。\n\n" + \
                     "3 生成的pdf文件在所选择的pdf文件目录中。\n\n" + \
                     "4 水印如果没有去除，可适当降低水印阈值。\n\n"
 
