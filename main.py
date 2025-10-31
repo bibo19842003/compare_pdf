@@ -16,7 +16,7 @@ import customtkinter
 from CTkMessagebox import CTkMessagebox
 from docx2pdf import convert
 import pymupdf
-from pikepdf import Pdf,Page,Rectangle
+from pikepdf import Pdf, Page, Rectangle
 from reportlab.lib import units
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
@@ -33,15 +33,37 @@ from config import pdf_font_dict
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
+
+        # 字体类型加载
+        self.ui_font = "Arial"
+        self.pdf_font_list = []
+        self.system = platform.system().lower()
+        if self.system == "windows":
+            print("这是 Windows 系统")
+            self.ui_font = "微软雅黑"
+            self.sys_font_list = [ i for i in os.listdir(r"C:\Windows\Fonts")]
+            self.pdf_font_list = [ k for k, v in pdf_font_dict.items() if v in self.sys_font_list]
+            for k in self.pdf_font_list:
+                pdfmetrics.registerFont(TTFont(k, os.path.join(r"C:\Windows\Fonts", pdf_font_dict[k])))
+        elif self.system == "linux":
+            print("这是 Linux 系统")
+            self.ui_font = "微软雅黑"
+        elif self.system == "darwin":
+            print("这是 macOS 系统")
+        else:
+            print(f"这是其他系统: {self.system}")
+
+
+        # UI
         customtkinter.deactivate_automatic_dpi_awareness()
-        self.textbox_font = customtkinter.CTkFont(family="微软雅黑", size=12)
-        self.entry_font = customtkinter.CTkFont(family="微软雅黑", size=14)
-        self.button_font = customtkinter.CTkFont(family="微软雅黑", size=14)
-        self.msg_font = customtkinter.CTkFont(family="微软雅黑", size=14)
-        self.radio_font = customtkinter.CTkFont(family="微软雅黑", size=14)
-        self.combox_font = customtkinter.CTkFont(family="微软雅黑", size=14)
-        self.font = customtkinter.CTkFont(family="微软雅黑", size=22)
-        self.label_font = customtkinter.CTkFont(family="Arial", size=24)
+        self.textbox_font = customtkinter.CTkFont(family=self.ui_font, size=12)
+        self.entry_font = customtkinter.CTkFont(family=self.ui_font, size=14)
+        self.button_font = customtkinter.CTkFont(family=self.ui_font, size=14)
+        self.msg_font = customtkinter.CTkFont(family=self.ui_font, size=14)
+        self.radio_font = customtkinter.CTkFont(family=self.ui_font, size=14)
+        self.combox_font = customtkinter.CTkFont(family=self.ui_font, size=14)
+        self.font = customtkinter.CTkFont(family=self.ui_font, size=22)
+        self.label_font = customtkinter.CTkFont(family=self.ui_font, size=24)
         self.title("PDF文本比较工具 v1.4.0_beta")
         self.geometry(("750x500"))
         self.resizable(0,0)
@@ -57,23 +79,14 @@ class App(customtkinter.CTk):
         self.msg_height = 150
 
         # paddle ocr 初始化
-        text_detection_model_dir = os.path.join(self.file_directory, "PP-OCRv5_server_det")
-        text_recognition_model_dir = os.path.join(self.file_directory, "PP-OCRv5_server_rec")
         self.ocr = PaddleOCR(
                             use_doc_orientation_classify=False,
                             use_doc_unwarping=False,
                             use_textline_orientation=False,
-                            text_detection_model_dir=text_detection_model_dir, 
-                            text_recognition_model_dir=text_recognition_model_dir, 
                             )
 
-        # pdf 字体类型加载
+        # pdf 水印模板
         self.pdf_watermark_template = os.path.join(self.file_directory, "pdf_watermark_template.pdf")
-        self.sys_font_list = [ i for i in os.listdir(r"C:\Windows\Fonts")]
-        self.pdf_font_list = [ k for k, v in pdf_font_dict.items() if v in self.sys_font_list]
-        for k in self.pdf_font_list:
-            pdfmetrics.registerFont(TTFont(k, os.path.join(r"C:\Windows\Fonts", pdf_font_dict[k])))
-
 
         self.user_ui()
         
@@ -242,7 +255,6 @@ class App(customtkinter.CTk):
     # 进行相关检验，然后对文本内容进行比较，生成diff文件
     def compare_and_create(self, file1, file2):
         try:
-        #if 1:
             self.fc_button_compare_file.configure(state="disabled")
 
             self.status_message_init("---运行开始---")
@@ -723,11 +735,15 @@ class App(customtkinter.CTk):
         tabview01_title3 = " 水印操作 "
         tabview01_title4 = " 图片操作 "
         tabview01_title_n = " 声明 "
-        self.tabview01.add(tabview01_title1)
-        self.tabview01.add(tabview01_title2)
-        self.tabview01.add(tabview01_title3)
-        self.tabview01.add(tabview01_title4)
-        self.tabview01.add(tabview01_title_n)
+        if self.system == "windows":
+            self.tabview01.add(tabview01_title1)
+            self.tabview01.add(tabview01_title2)
+            self.tabview01.add(tabview01_title3)
+            self.tabview01.add(tabview01_title4)
+            self.tabview01.add(tabview01_title_n)
+        else:
+            self.tabview01.add(tabview01_title1)
+            self.tabview01.add(tabview01_title_n)
 
         # 第一个选项卡 PDF文本比较 fc
         # 第一个选项卡 PDF文本比较 fc
@@ -767,171 +783,172 @@ class App(customtkinter.CTk):
         # log打印
         self.fc_textbox_log = customtkinter.CTkTextbox(self.tabview01.tab(tabview01_title1), bg_color="#000001",width=690, height=180, state=customtkinter.DISABLED, font=self.textbox_font, corner_radius=0)
         self.fc_textbox_log.place(x=30, y=250)
-        
-        
-        # 第二个选项卡 文本转换  ft
-        # 第二个选项卡 文本转换  ft
-        # 第二个选项卡 文本转换  ft
-        # 文件选择
-        self.ft_button_select_file = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="请选择要转换的文件", command=lambda i=1: self.select_convert_file(i), width=140, font=self.button_font)
-        self.ft_button_select_file.place(x=30, y=10)
 
-        self.ft_entry_select_file = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title2), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
-        self.ft_entry_select_file.place(x=195, y=12)
-        
-        # 模式选择
-        self.ft_mode_var = customtkinter.StringVar()
-        self.ft_mode_var.set("word2pdf")
-        self.ft_radio_mode_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title2), text="word 转 pdf", variable=self.ft_mode_var, value="word2pdf", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
-        self.ft_radio_mode_1.place(x=30, y=70)
+        if self.system == "windows":
+            # 第二个选项卡 文本转换  ft
+            # 第二个选项卡 文本转换  ft
+            # 第二个选项卡 文本转换  ft
+            # 文件选择
+            self.ft_button_select_file = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="请选择要转换的文件", command=lambda i=1: self.select_convert_file(i), width=140, font=self.button_font)
+            self.ft_button_select_file.place(x=30, y=10)
 
-        # 文件转换
-        self.ft_button_convert = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="文本转换", command=lambda: threading.Thread(target=self.file_convert, args=(self.ft_entry_select_file.get(),)).start(), width=120, font=self.button_font)
-        self.ft_button_convert.place(x=30, y=130)
-        
-        # 文件夹内批量转换
-        # 文件夹内批量转换
-        # 输入文件夹选择
-        self.ft_entry_select_folder = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title2), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
-        self.ft_entry_select_folder.place(x=195, y=262)
-        
-        self.ft_button_select_folder = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="请选择输入文件夹", command=lambda i=1: self.select_convert_folder(self.ft_entry_select_folder), width=140, font=self.button_font)
-        self.ft_button_select_folder.place(x=30, y=260)
+            self.ft_entry_select_file = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title2), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
+            self.ft_entry_select_file.place(x=195, y=12)
 
-        # 模式选择
-        self.ft_mode_folder_var = customtkinter.StringVar()
-        self.ft_mode_folder_var.set("image2pdf")
-        self.ft_radio_mode_folder_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title2), text="图片合成PDF", variable=self.ft_mode_folder_var, value="image2pdf", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
-        self.ft_radio_mode_folder_1.place(x=30, y=320)
+            # 模式选择
+            self.ft_mode_var = customtkinter.StringVar()
+            self.ft_mode_var.set("word2pdf")
+            self.ft_radio_mode_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title2), text="word 转 pdf", variable=self.ft_mode_var, value="word2pdf", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
+            self.ft_radio_mode_1.place(x=30, y=70)
 
-        # 文件转换
-        self.ft_button_folder_convert = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="转换", command=lambda: threading.Thread(target=self.batch_file_convert, args=(self.ft_entry_select_folder.get(),)).start(), width=120, font=self.button_font)
-        self.ft_button_folder_convert.place(x=30, y=380)
-        
-        
-        # 第三个选项卡 水印操作  wh
-        # 第三个选项卡 水印操作  wh
-        # 第三个选项卡 水印操作  wh
-        # 文件选择
-        self.wh_button_select_file = customtkinter.CTkButton(self.tabview01.tab(tabview01_title3), text="请选择要处理的文件", command=lambda i=1: self.wh_select_convert_file(i), width=140, font=self.button_font)
-        self.wh_button_select_file.place(x=30, y=10)
+            # 文件转换
+            self.ft_button_convert = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="文本转换", command=lambda: threading.Thread(target=self.file_convert, args=(self.ft_entry_select_file.get(),)).start(), width=120, font=self.button_font)
+            self.ft_button_convert.place(x=30, y=130)
 
-        self.wh_entry_select_file = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title3), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
-        self.wh_entry_select_file.place(x=195, y=12)
-        
-        # 处理模式选择
-        self.wh_mode_add_del_var = customtkinter.StringVar()
-        self.wh_mode_add_del_var.set("add")
-        self.wh_radio_add_del_mode_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title3), text="添加水印", variable=self.wh_mode_add_del_var, value="add", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
-        self.wh_radio_add_del_mode_1.place(x=30, y=70)
-        self.wh_radio_add_del_mode_2 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title3), text="删除水印", variable=self.wh_mode_add_del_var, value="del", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
-        self.wh_radio_add_del_mode_2.place(x=30, y=95)
-        
-        # 其他
-        # 水印内容
-        wh_label_w_c = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印内容", font=self.entry_font).place(x=30, y=138)
-        self.wh_entry_w_c = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title3), fg_color="#E9EBFE", font=self.entry_font, width=300, height=25, corner_radius=0, border_width=1)
-        self.wh_entry_w_c.place(x=100, y=140)
-        
-        # 字体类型
-        wh_label_font_type = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="字体类型", font=self.entry_font).place(x=30, y=173)
-        self.wh_combobox_font_type = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=self.pdf_font_list, state="readonly", width=150, height=20, font=self.combox_font, corner_radius=0)
-        self.wh_combobox_font_type.place(x=100, y=175)
-        self.wh_combobox_font_type.set(self.pdf_font_list[0])
+            # 文件夹内批量转换
+            # 文件夹内批量转换
+            # 输入文件夹选择
+            self.ft_entry_select_folder = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title2), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
+            self.ft_entry_select_folder.place(x=195, y=262)
 
-        # 字体大小
-        wh_label_font_size = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="字体大小", font=self.entry_font).place(x=30, y=208)
-        self.wh_combobox_font_size = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ str(i) for i in range(15, 51, 5)], width=90, height=20, font=self.combox_font, corner_radius=0)
-        self.wh_combobox_font_size.place(x=100, y=210)
-        self.wh_combobox_font_size.set("40")
+            self.ft_button_select_folder = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="请选择输入文件夹", command=lambda i=1: self.select_convert_folder(self.ft_entry_select_folder), width=140, font=self.button_font)
+            self.ft_button_select_folder.place(x=30, y=260)
 
-        # 水印行数
-        wh_label_w_row = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印行数", font=self.entry_font).place(x=30, y=243)
-        self.wh_combobox_w_row = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ str(i) for i in range(1, 6, 1)], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
-        self.wh_combobox_w_row.place(x=100, y=245)
-        self.wh_combobox_w_row.set("1")
-        
-        # 水印列数
-        wh_label_w_col = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印列数", font=self.entry_font).place(x=30, y=278)
-        self.wh_combobox_w_col = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ str(i) for i in range(1, 6, 1)], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
-        self.wh_combobox_w_col.place(x=100, y=280)
-        self.wh_combobox_w_col.set("1")
-        
-        # 水印旋转角度
-        wh_label_w_angle = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印角度", font=self.entry_font).place(x=30, y=313)
-        self.wh_combobox_w_angle = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ "15", "30", "45", "60", "75", "105", "120", "135", "150", "165", ], width=90, height=20, font=self.combox_font, corner_radius=0)
-        self.wh_combobox_w_angle.place(x=100, y=315)
-        self.wh_combobox_w_angle.set("45")
-        
-        # 水印偏移位置 x
-        wh_label_w_offset_x = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印偏移x", font=self.entry_font).place(x=240, y=243)
-        self.wh_combobox_w_offset_x = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ str(i) for i in range(0, 21, 2)], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
-        self.wh_combobox_w_offset_x.place(x=320, y=245)
-        self.wh_combobox_w_offset_x.set("0")
-        
-        # 水印偏移位置 y
-        wh_label_w_offset_y = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印偏移y", font=self.entry_font).place(x=240, y=278)
-        self.wh_combobox_w_offset_y = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ str(i) for i in range(0, 21, 2)], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
-        self.wh_combobox_w_offset_y.place(x=320, y=280)
-        self.wh_combobox_w_offset_y.set("0")
-        
-        # 水印透明度
-        wh_label_w_transparency = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="透明度", font=self.entry_font).place(x=250, y=208)
-        self.wh_combobox_w_transparency = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ "0.2", "0.3", "0.4", "0.5"], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
-        self.wh_combobox_w_transparency.place(x=320, y=210)
-        self.wh_combobox_w_transparency.set("0.2")
-        
-        # 水印阈值
-        wh_label_w_threshold = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印阈值", font=self.entry_font).place(x=245, y=313)
-        self.wh_combobox_w_threshold = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ "400", "500", "550", "600", "650"], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
-        self.wh_combobox_w_threshold.place(x=320, y=315)
-        self.wh_combobox_w_threshold.set("600")
+            # 模式选择
+            self.ft_mode_folder_var = customtkinter.StringVar()
+            self.ft_mode_folder_var.set("image2pdf")
+            self.ft_radio_mode_folder_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title2), text="图片合成PDF", variable=self.ft_mode_folder_var, value="image2pdf", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
+            self.ft_radio_mode_folder_1.place(x=30, y=320)
 
-        # 说明窗口
-        wh_readme = "\n" + \
-                    "说明:\n\n" + \
-                    "1 水印偏移x/y可以调整水印的位置。\n\n" + \
-                    "2 本地字体类型的路径 'C:/Windows/Fonts'，字体类型通过 config.py 进行配置。\n\n" + \
-                    "3 生成的pdf文件在所选择的pdf文件目录中。\n\n" + \
-                    "4 水印如果没有去除，可适当降低水印阈值。\n\n"
-
-        self.wh_textbox_readme = customtkinter.CTkTextbox(self.tabview01.tab(tabview01_title3), width=280, height=368, corner_radius=0)
-        self.wh_textbox_readme.place(x=440, y=60)
-        self.wh_textbox_readme.insert("0.0", wh_readme)
-        self.wh_textbox_readme.configure(state="disabled")
-
-        # 文件处理
-        self.wh_button_pdf = customtkinter.CTkButton(self.tabview01.tab(tabview01_title3), text="文件处理", command=lambda: threading.Thread(target=self.pdf_create_del_watermark).start(), width=140, font=self.button_font)
-        self.wh_button_pdf.place(x=100, y=405)
+            # 文件转换
+            self.ft_button_folder_convert = customtkinter.CTkButton(self.tabview01.tab(tabview01_title2), text="转换", command=lambda: threading.Thread(target=self.batch_file_convert, args=(self.ft_entry_select_folder.get(),)).start(), width=120, font=self.button_font)
+            self.ft_button_folder_convert.place(x=30, y=380)
 
 
-        # 第四个选项卡 图片操作  ih
-        # 第四个选项卡 图片操作  ih
-        # 第四个选项卡 图片操作  ih
-        # 输入文件夹选择
-        self.ih_entry_select_folder = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title4), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
-        self.ih_entry_select_folder.place(x=195, y=12)
-        
-        self.ih_button_select_folder = customtkinter.CTkButton(self.tabview01.tab(tabview01_title4), text="请选择要处理的文件夹", command=lambda i=1: self.select_convert_folder(self.ih_entry_select_folder), width=140, font=self.button_font)
-        self.ih_button_select_folder.place(x=30, y=10)
+            # 第三个选项卡 水印操作  wh
+            # 第三个选项卡 水印操作  wh
+            # 第三个选项卡 水印操作  wh
+            # 文件选择
+            self.wh_button_select_file = customtkinter.CTkButton(self.tabview01.tab(tabview01_title3), text="请选择要处理的文件", command=lambda i=1: self.wh_select_convert_file(i), width=140, font=self.button_font)
+            self.wh_button_select_file.place(x=30, y=10)
 
-        # 输出文件夹选择
-        self.ih_entry_select_output_folder = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title4), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
-        self.ih_entry_select_output_folder.place(x=195, y=72)
-        
-        self.ih_button_select_output_folder = customtkinter.CTkButton(self.tabview01.tab(tabview01_title4), text="请选择输出文件夹", command=lambda i=1: self.select_convert_folder(self.ih_entry_select_output_folder), width=140, font=self.button_font)
-        self.ih_button_select_output_folder.place(x=30, y=70)
+            self.wh_entry_select_file = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title3), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
+            self.wh_entry_select_file.place(x=195, y=12)
 
-        # 模式选择
-        self.ih_mode_var = customtkinter.StringVar()
-        self.ih_mode_var.set("image_enhance")
-        self.ih_radio_mode_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title4), text="图片文字变清晰", variable=self.ih_mode_var, value="image_enhance", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
-        self.ih_radio_mode_1.place(x=30, y=130)
+            # 处理模式选择
+            self.wh_mode_add_del_var = customtkinter.StringVar()
+            self.wh_mode_add_del_var.set("add")
+            self.wh_radio_add_del_mode_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title3), text="添加水印", variable=self.wh_mode_add_del_var, value="add", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
+            self.wh_radio_add_del_mode_1.place(x=30, y=70)
+            self.wh_radio_add_del_mode_2 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title3), text="删除水印", variable=self.wh_mode_add_del_var, value="del", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
+            self.wh_radio_add_del_mode_2.place(x=30, y=95)
 
-        # 文件夹转换
-        self.ih_button_convert = customtkinter.CTkButton(self.tabview01.tab(tabview01_title4), text="处理", command=lambda: threading.Thread(target=self.folder_convert, args=(self.ih_entry_select_folder.get(), self.ih_entry_select_output_folder.get())).start(), width=120, font=self.button_font)
-        self.ih_button_convert.place(x=30, y=190)
-        
+            # 其他
+            # 水印内容
+            wh_label_w_c = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印内容", font=self.entry_font).place(x=30, y=138)
+            self.wh_entry_w_c = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title3), fg_color="#E9EBFE", font=self.entry_font, width=300, height=25, corner_radius=0, border_width=1)
+            self.wh_entry_w_c.place(x=100, y=140)
+
+            # 字体类型
+            wh_label_font_type = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="字体类型", font=self.entry_font).place(x=30, y=173)
+            self.wh_combobox_font_type = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=self.pdf_font_list, state="readonly", width=150, height=20, font=self.combox_font, corner_radius=0)
+            self.wh_combobox_font_type.place(x=100, y=175)
+            if len(self.pdf_font_list) > 0:
+                self.wh_combobox_font_type.set(self.pdf_font_list[0])
+
+            # 字体大小
+            wh_label_font_size = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="字体大小", font=self.entry_font).place(x=30, y=208)
+            self.wh_combobox_font_size = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ str(i) for i in range(15, 51, 5)], width=90, height=20, font=self.combox_font, corner_radius=0)
+            self.wh_combobox_font_size.place(x=100, y=210)
+            self.wh_combobox_font_size.set("40")
+
+            # 水印行数
+            wh_label_w_row = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印行数", font=self.entry_font).place(x=30, y=243)
+            self.wh_combobox_w_row = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ str(i) for i in range(1, 6, 1)], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
+            self.wh_combobox_w_row.place(x=100, y=245)
+            self.wh_combobox_w_row.set("1")
+
+            # 水印列数
+            wh_label_w_col = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印列数", font=self.entry_font).place(x=30, y=278)
+            self.wh_combobox_w_col = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ str(i) for i in range(1, 6, 1)], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
+            self.wh_combobox_w_col.place(x=100, y=280)
+            self.wh_combobox_w_col.set("1")
+
+            # 水印旋转角度
+            wh_label_w_angle = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印角度", font=self.entry_font).place(x=30, y=313)
+            self.wh_combobox_w_angle = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ "15", "30", "45", "60", "75", "105", "120", "135", "150", "165", ], width=90, height=20, font=self.combox_font, corner_radius=0)
+            self.wh_combobox_w_angle.place(x=100, y=315)
+            self.wh_combobox_w_angle.set("45")
+
+            # 水印偏移位置 x
+            wh_label_w_offset_x = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印偏移x", font=self.entry_font).place(x=240, y=243)
+            self.wh_combobox_w_offset_x = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ str(i) for i in range(0, 21, 2)], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
+            self.wh_combobox_w_offset_x.place(x=320, y=245)
+            self.wh_combobox_w_offset_x.set("0")
+
+            # 水印偏移位置 y
+            wh_label_w_offset_y = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印偏移y", font=self.entry_font).place(x=240, y=278)
+            self.wh_combobox_w_offset_y = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ str(i) for i in range(0, 21, 2)], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
+            self.wh_combobox_w_offset_y.place(x=320, y=280)
+            self.wh_combobox_w_offset_y.set("0")
+
+            # 水印透明度
+            wh_label_w_transparency = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="透明度", font=self.entry_font).place(x=250, y=208)
+            self.wh_combobox_w_transparency = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ "0.2", "0.3", "0.4", "0.5"], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
+            self.wh_combobox_w_transparency.place(x=320, y=210)
+            self.wh_combobox_w_transparency.set("0.2")
+
+            # 水印阈值
+            wh_label_w_threshold = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title3), text="水印阈值", font=self.entry_font).place(x=245, y=313)
+            self.wh_combobox_w_threshold = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title3), values=[ "400", "500", "550", "600", "650"], state="readonly", width=90, height=20, font=self.combox_font, corner_radius=0)
+            self.wh_combobox_w_threshold.place(x=320, y=315)
+            self.wh_combobox_w_threshold.set("600")
+
+            # 说明窗口
+            wh_readme = "\n" + \
+                        "说明:\n\n" + \
+                        "1 水印偏移x/y可以调整水印的位置。\n\n" + \
+                        "2 本地字体类型的路径 'C:/Windows/Fonts'，字体类型通过 config.py 进行配置。\n\n" + \
+                        "3 生成的pdf文件在所选择的pdf文件目录中。\n\n" + \
+                        "4 水印如果没有去除，可适当降低水印阈值。\n\n"
+
+            self.wh_textbox_readme = customtkinter.CTkTextbox(self.tabview01.tab(tabview01_title3), width=280, height=368, corner_radius=0)
+            self.wh_textbox_readme.place(x=440, y=60)
+            self.wh_textbox_readme.insert("0.0", wh_readme)
+            self.wh_textbox_readme.configure(state="disabled")
+
+            # 文件处理
+            self.wh_button_pdf = customtkinter.CTkButton(self.tabview01.tab(tabview01_title3), text="文件处理", command=lambda: threading.Thread(target=self.pdf_create_del_watermark).start(), width=140, font=self.button_font)
+            self.wh_button_pdf.place(x=100, y=405)
+
+
+            # 第四个选项卡 图片操作  ih
+            # 第四个选项卡 图片操作  ih
+            # 第四个选项卡 图片操作  ih
+            # 输入文件夹选择
+            self.ih_entry_select_folder = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title4), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
+            self.ih_entry_select_folder.place(x=195, y=12)
+
+            self.ih_button_select_folder = customtkinter.CTkButton(self.tabview01.tab(tabview01_title4), text="请选择要处理的文件夹", command=lambda i=1: self.select_convert_folder(self.ih_entry_select_folder), width=140, font=self.button_font)
+            self.ih_button_select_folder.place(x=30, y=10)
+
+            # 输出文件夹选择
+            self.ih_entry_select_output_folder = customtkinter.CTkEntry(self.tabview01.tab(tabview01_title4), fg_color="#E9EBFE", font=self.entry_font, width=525, height=25, corner_radius=0, border_width=1)
+            self.ih_entry_select_output_folder.place(x=195, y=72)
+
+            self.ih_button_select_output_folder = customtkinter.CTkButton(self.tabview01.tab(tabview01_title4), text="请选择输出文件夹", command=lambda i=1: self.select_convert_folder(self.ih_entry_select_output_folder), width=140, font=self.button_font)
+            self.ih_button_select_output_folder.place(x=30, y=70)
+
+            # 模式选择
+            self.ih_mode_var = customtkinter.StringVar()
+            self.ih_mode_var.set("image_enhance")
+            self.ih_radio_mode_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title4), text="图片文字变清晰", variable=self.ih_mode_var, value="image_enhance", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
+            self.ih_radio_mode_1.place(x=30, y=130)
+
+            # 文件夹转换
+            self.ih_button_convert = customtkinter.CTkButton(self.tabview01.tab(tabview01_title4), text="处理", command=lambda: threading.Thread(target=self.folder_convert, args=(self.ih_entry_select_folder.get(), self.ih_entry_select_output_folder.get())).start(), width=120, font=self.button_font)
+            self.ih_button_convert.place(x=30, y=190)
+
 
         # 第N个选项卡 声明 rd
         # 第N个选项卡 声明 rd
@@ -947,9 +964,7 @@ class App(customtkinter.CTk):
         self.rd_textbox.configure(state="disabled")  # configure textbox to be read-only
 
 
-        
-        
+
 app = App()
 app.protocol("WM_DELETE_WINDOW", app.on_closing)
 app.mainloop()
-
