@@ -45,5 +45,6 @@ python main.py
 ## 其他说明
 **1、运行设备**  
 代码使用CPU运行，非GPU运行；如果想使用GPU运行，请卸载 paddleocr 并安装 paddleocr-gpu。
+
 **2、模型版本**  
 OCR 模型版本为 PP-OCRv5，若使用 v4 版本，请将代码切换到分支 main_ocr_v4 。
