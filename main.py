@@ -14,7 +14,7 @@ from paddleocr import PaddleOCR
 from difflib import HtmlDiff
 import customtkinter
 from CTkMessagebox import CTkMessagebox
-from win32com import client
+from docx2pdf import convert
 import pymupdf
 from pikepdf import Pdf,Page,Rectangle
 from reportlab.lib import units
@@ -347,11 +347,8 @@ class App(customtkinter.CTk):
             time_str = time_now.strftime('%Y%m%d_%H%M%S')
             new_file = os.path.join(filepath, filename.split(".")[0] + time_str + ".pdf")
             
-            word = client.Dispatch("Word.Application")
-            doc = word.Documents.Open(file)  # 打开word文件
-            doc.SaveAs(new_file, 17)
-            doc.Close()
-            word.Quit()
+            convert(file, new_file)
+
             return 1
         except:
             return 0
@@ -380,6 +377,7 @@ class App(customtkinter.CTk):
             # 1 检查是否选择文件
             if not os.path.isfile(file):
                 CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='请选择要转换的文件！')
+                self.ft_button_convert.configure(state="normal")
                 return
         
             # 2 文件格式转换
@@ -408,6 +406,7 @@ class App(customtkinter.CTk):
                 pass
             else:
                 CTkMessagebox(title='错误', font=self.msg_font, justify="center", option_1="退出", icon="cancel", width=self.msg_width, height=self.msg_height, message='请选择输入文件夹！')
+                self.ft_button_folder_convert.configure(state="normal")
                 return
         
             # 2 文件格式转换

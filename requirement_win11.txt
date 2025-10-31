@@ -10,5 +10,4 @@ customtkinter==5.2.2
 CTkMessagebox==2.7
 pikepdf==10.0.0
 reportlab==4.4.4
-
-pywin32==311
+docx2pdf==0.1.8
