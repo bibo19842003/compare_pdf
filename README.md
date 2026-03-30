@@ -1,4 +1,7 @@
+# 说明
+
 ## 软件说明
+
 用于pdf内容比较，比较结果不保证完全正确，仅供参考。
 
 ![主界面截图](resource/ui.png)  
@@ -22,30 +25,53 @@
 4 由于系统兼容性原因，ubuntu下只有 PDF 文档比较功能可以使用。
 
 ## 环境说明
+
 已在下面环境中进行验证。  
 操作系统：win11 / ubuntu22.04
 Python：3.12
 
 ## 安装说明
-**1、安装依赖**  
+
+### win11 安装说明
+
 ```py
 git clone https://github.com/bibo19842003/compare_pdf
 cd compare_pdf
 pip install -r requirement_win11.txt
 ```
 
+cpu 运行：
+
+```py
+pip uninstall paddlepaddle-gpu
+python -m pip install paddlepaddle==3.3.0 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+pip install -U paddleocr
+pip install paddlex[ocr]==3.4.1
+```
+
+gpu 运行：
+
+```py
+pip uninstall paddlepaddle
+python -m pip install paddlepaddle-gpu==3.3.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
+pip install -U paddleocr
+pip install paddlex[ocr]==3.4.1
+```
+
+### ubuntu22.04 暂未验证
+
+```py
+git clone https://github.com/bibo19842003/compare_pdf
+cd compare_pdf
+pip install -r requirement_ubuntu22.04.txt
+```
 
 ## 代码运行
+
 ```py
 python main.py
 ```
 
 ## 打包EXE文件
+
 目前，打包出的exe文件运行报错，待后续完善。
-
-## 其他说明
-**1、运行设备**  
-代码使用CPU运行，非GPU运行；如果想使用GPU运行，请卸载 paddleocr 并安装 paddleocr-gpu。
-
-**2、模型版本**  
-OCR 模型版本为 PP-OCRv5，若使用 v4 版本，请将代码切换到分支 main_ocr_v4 。

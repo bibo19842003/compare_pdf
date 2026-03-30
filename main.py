@@ -1,16 +1,19 @@
 import os
+os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
+
 import sys
 import shutil
 import datetime
 import threading
 from itertools import product
 import math
-from typing import Union, Tuple
+from typing import Any, Union, Tuple
 import json
 import platform
 
 import fitz
 from paddleocr import PaddleOCR
+from paddleocr import PaddleOCRVL
 from difflib import HtmlDiff
 import customtkinter
 from CTkMessagebox import CTkMessagebox
@@ -21,7 +24,6 @@ from reportlab.lib import units
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import  TTFont
-import cv2
 from PIL import Image, ImageEnhance
 
 from config import pdf_font_dict
@@ -64,7 +66,7 @@ class App(customtkinter.CTk):
         self.combox_font = customtkinter.CTkFont(family=self.ui_font, size=14)
         self.font = customtkinter.CTkFont(family=self.ui_font, size=22)
         self.label_font = customtkinter.CTkFont(family=self.ui_font, size=24)
-        self.title("PDF文本比较工具 v1.4.0_beta")
+        self.title("PDF文本比较工具 v1.4.0_beta_2")
         self.geometry(("750x500"))
         self.resizable(0,0)
         self.configure(fg_color="#FDE6E0")
@@ -78,23 +80,58 @@ class App(customtkinter.CTk):
         self.msg_width = 300
         self.msg_height = 150
 
+        # 检查配置文件是否存在并设置ocr_model
+        config_file = os.path.join(self.file_directory, "config.json")
+        if os.path.exists(config_file):
+            try:
+                with open(config_file, "r", encoding="utf-8") as f:
+                    config_data = json.load(f)
+                    self.ocr_model = config_data.get("model", "PP-OCRv5")
+            except Exception as e:
+                print(f"读取配置文件失败: {e}")
+                self.ocr_model = "PP-OCRv5"
+        else:
+            self.ocr_model = "PP-OCRv5"
+
         # paddle ocr 初始化
-        self.ocr = PaddleOCR(
-                            use_doc_orientation_classify=False,
-                            use_doc_unwarping=False,
-                            use_textline_orientation=False,
-                            )
+        self.ocr_init()
 
         # pdf 水印模板
         self.pdf_watermark_template = os.path.join(self.file_directory, "pdf_watermark_template.pdf")
 
         self.user_ui()
-        
+
+
+    # paddle ocr 初始化
+    def ocr_init(self):
+        if self.ocr_model == "PP-OCRv5":
+            self.ocr = PaddleOCR(
+                                use_doc_orientation_classify=False,
+                                use_doc_unwarping=False,
+                                use_textline_orientation=False,
+                                device="gpu"
+                                )
+        elif self.ocr_model == "VL-1.5":
+            self.ocr = PaddleOCRVL(
+                                use_doc_orientation_classify=False,
+                                use_doc_unwarping=False,
+                                device="gpu"
+                                )
+        else:
+            CTkMessagebox(title="提示", message="请选择正确的模型！", icon="warning")
+            return
+
 
     # 范围：pdf文本比较
     # 选择文件夹
     def select_folder(self, index):
         folder = customtkinter.filedialog.askopenfilename()
+        # 不支持doc，支持docx格式
+        suffix = folder.split(".")[-1].lower()
+        if suffix == "doc":
+            CTkMessagebox(title="上传失败", message="不支持doc格式的文档", icon="cancel")
+            return
+        
         if folder:
             if index == 1:
                 self.fc_entry_select_file_1.delete(0, customtkinter.END)
@@ -145,12 +182,21 @@ class App(customtkinter.CTk):
         page_res = f"以下是第 {index+1} 页内容 \n"
 
         for res in result:
-            # res.print()
-            page_result = res["rec_texts"]
-            if len(page_result) > 0:
-                for line in page_result:
-                    res_line = line + "\n"
-                    page_res += res_line
+            res.print()
+            if self.ocr_model == "PP-OCRv5":
+                page_result = res["rec_texts"]
+                if len(page_result) > 0:
+                    for line in page_result:
+                        res_line = line + "\n"
+                        page_res += res_line
+            elif self.ocr_model == "VL-1.5":
+                parsing_res_list = res["parsing_res_list"]
+                if len(parsing_res_list) > 0:
+                    for i in parsing_res_list:
+                        if i.label == "text":
+                            res_line = i.content + "\n"
+                            page_res += res_line
+
         page_res += "\n"
             
         return page_res
@@ -255,6 +301,7 @@ class App(customtkinter.CTk):
     # 进行相关检验，然后对文本内容进行比较，生成diff文件
     def compare_and_create(self, file1, file2):
         try:
+        #if 1:
             self.fc_button_compare_file.configure(state="disabled")
 
             self.status_message_init("---运行开始---")
@@ -341,6 +388,12 @@ class App(customtkinter.CTk):
     def select_convert_file(self, index):
         folder = customtkinter.filedialog.askopenfilename()
         if folder:
+            # 检查文件后缀，如果是doc格式则提示不支持
+            suffix = folder.split(".")[-1].lower()
+            if suffix == "doc":
+                CTkMessagebox(title="上传失败", message="不支持doc格式的文档", icon="cancel")
+                return
+            
             self.ft_entry_select_file.delete(0, customtkinter.END)
             self.ft_entry_select_file.insert(0, folder)
 
@@ -671,6 +724,20 @@ class App(customtkinter.CTk):
 
 
     # 范围：窗口
+    def save_config(self):
+        model = self.cf_combobox_model.get()
+        config_data = {
+            "model": model
+        }
+        config_file = os.path.join(self.file_directory, "config.json")
+        with open(config_file, "w", encoding="utf-8") as f:
+            json.dump(config_data, f, ensure_ascii=False, indent=2)
+
+        self.ocr_model = model
+        self.ocr_init()
+
+        CTkMessagebox(title="提示", message="配置已保存！", icon="check")
+
     def on_closing(self):
             self.destroy()
             self.quit()
@@ -689,11 +756,13 @@ class App(customtkinter.CTk):
         tabview01_title1 = " PDF文本比较 "
         tabview01_title2 = " 文本转换 "
         tabview01_title3 = " 水印操作 "
+        tabview01_title4 = " 配置 "
         tabview01_title_n = " 声明 "
         if self.system == "windows":
             self.tabview01.add(tabview01_title1)
             self.tabview01.add(tabview01_title2)
             self.tabview01.add(tabview01_title3)
+            self.tabview01.add(tabview01_title4)
             self.tabview01.add(tabview01_title_n)
         else:
             self.tabview01.add(tabview01_title1)
@@ -874,6 +943,32 @@ class App(customtkinter.CTk):
             # 文件处理
             self.wh_button_pdf = customtkinter.CTkButton(self.tabview01.tab(tabview01_title3), text="文件处理", command=lambda: threading.Thread(target=self.pdf_create_del_watermark).start(), width=140, font=self.button_font)
             self.wh_button_pdf.place(x=100, y=405)
+
+
+        # 第四个选项卡 配置  cf
+        # 第四个选项卡 配置  cf
+        # 第四个选项卡 配置  cf
+        '''
+        # 运行模式选择
+        cf_label_run_mode = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title4), text="运行模式", font=self.entry_font).place(x=30, y=16)
+        self.cf_run_mode_var = customtkinter.StringVar()
+        self.cf_run_mode_var.set("cpu")
+        self.cf_radio_run_mode_1 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title4), text="CPU模式", variable=self.cf_run_mode_var, value="cpu", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
+        self.cf_radio_run_mode_1.place(x=100, y=20)
+        self.cf_radio_run_mode_2 = customtkinter.CTkRadioButton(self.tabview01.tab(tabview01_title4), text="GPU模式", variable=self.cf_run_mode_var, value="gpu", border_color="gray", font=self.radio_font, radiobutton_width=18, radiobutton_height=18, border_width_checked=5)
+        self.cf_radio_run_mode_2.place(x=200, y=20)
+        '''
+
+        # 模型选择
+        cf_label_model = customtkinter.CTkLabel(self.tabview01.tab(tabview01_title4), text="模型选择", font=self.entry_font).place(x=30, y=70)
+        model_list = ["PP-OCRv5", "VL-1.5"]
+        self.cf_combobox_model = customtkinter.CTkComboBox(self.tabview01.tab(tabview01_title4), values=model_list, state="readonly", width=150, height=20, font=self.combox_font, corner_radius=0)
+        self.cf_combobox_model.place(x=100, y=72)
+        self.cf_combobox_model.set(self.ocr_model)
+
+        # 保存配置按钮
+        self.cf_button_save = customtkinter.CTkButton(self.tabview01.tab(tabview01_title4), text="保存配置", command=lambda: self.save_config(), width=140, font=self.button_font)
+        self.cf_button_save.place(x=100, y=130)
 
 
         # 第N个选项卡 声明 rd

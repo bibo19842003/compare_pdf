@@ -16,3 +16,4 @@ dist*
 *.png
 *.jpg
 PP-OCRv5*
+config.json
